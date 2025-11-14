@@ -31,8 +31,20 @@ Navio/
 │   │       └── messages.json      # Localized strings
 │   └── SafariWebExtensionHandler.swift  # Native message handler
 ├── NavioTests/                    # Unit tests
-└── NavioUITests/                  # UI tests
+├── NavioUITests/                  # UI tests
+├── README.md                      # This file - comprehensive documentation
+├── TESTING.md                     # Testing procedures and test cases
+├── URL_PATTERNS.md                # URL conversion patterns and examples
+├── ICONS.md                       # Icon requirements and generation
+└── generate-icons.sh              # Script to generate missing icon sizes
 ```
+
+## Supporting Documentation
+
+- **[TESTING.md](TESTING.md)** - Comprehensive testing guide with 20+ test cases covering functional, performance, UX, and edge case testing
+- **[URL_PATTERNS.md](URL_PATTERNS.md)** - Detailed documentation of all supported Google Maps URL patterns and their Apple Maps conversions
+- **[ICONS.md](ICONS.md)** - Icon requirements, design guidelines, and generation instructions
+- **[generate-icons.sh](generate-icons.sh)** - Automated script to generate missing icon sizes using ImageMagick
 
 ## How It Works
 
