@@ -74,16 +74,9 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     /// Opens a URL using the appropriate method for iOS or macOS
     private func openURL(_ url: URL) {
         #if os(iOS)
-        // iOS: Use UIApplication.shared.open
-        DispatchQueue.main.async {
-            UIApplication.shared.open(url, options: [:]) { success in
-                if success {
-                    os_log(.default, "Successfully opened URL on iOS: %@", url.absoluteString)
-                } else {
-                    os_log(.error, "Failed to open URL on iOS: %@", url.absoluteString)
-                }
-            }
-        }
+        // iOS: App extensions cannot use UIApplication.shared
+        // The JavaScript side will handle URL opening via window.location.href
+        os_log(.default, "URL opening delegated to JavaScript on iOS: %@", url.absoluteString)
         #elseif os(macOS)
         // macOS: Use NSWorkspace.shared.open
         DispatchQueue.main.async {
