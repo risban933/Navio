@@ -2,14 +2,209 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
-
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
-    <link rel="stylesheet" href="../Style.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 32px 24px;
+            margin: 0;
+            text-align: center;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.6;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #000000;
+                color: #f5f5f7;
+            }
+
+            .instructions {
+                background-color: #1c1c1e;
+                border-color: #38383a;
+            }
+
+            .step {
+                border-color: #38383a;
+            }
+        }
+
+        .logo {
+            margin: 0 auto 24px;
+            width: 128px;
+            height: 128px;
+            border-radius: 28px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+        }
+
+        .tagline {
+            font-size: 18px;
+            color: #86868b;
+            margin: 0 0 32px 0;
+        }
+
+        .instructions {
+            background-color: #ffffff;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 0 auto 24px;
+            max-width: 600px;
+            text-align: left;
+        }
+
+        .instructions h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            text-align: center;
+        }
+
+        .step {
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid #007aff;
+            background-color: rgba(0, 122, 255, 0.05);
+        }
+
+        .step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-number {
+            font-weight: 700;
+            color: #007aff;
+            margin-right: 8px;
+        }
+
+        .note {
+            font-size: 14px;
+            color: #86868b;
+            margin-top: 24px;
+            padding: 16px;
+            background-color: rgba(0, 122, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 24px auto;
+            max-width: 600px;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            font-size: 16px;
+        }
+
+        .feature-list li::before {
+            content: "✓ ";
+            color: #34c759;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="Navio Icon">
-    <p>You can turn on Navio’s Safari extension in Settings.</p>
+    <img src="../Icon.png" class="logo" alt="Navio Icon">
+
+    <h1>Welcome to Navio</h1>
+    <p class="tagline">Automatically open Google Maps links in Apple Maps</p>
+
+    <div class="instructions">
+        <h2>Get Started</h2>
+
+        <div class="step">
+            <span class="step-number">1.</span>
+            Open <strong>Settings</strong> on your device
+        </div>
+
+        <div class="step">
+            <span class="step-number">2.</span>
+            Go to <strong>Safari</strong> → <strong>Extensions</strong>
+        </div>
+
+        <div class="step">
+            <span class="step-number">3.</span>
+            Enable <strong>Navio</strong>
+        </div>
+
+        <div class="step">
+            <span class="step-number">4.</span>
+            Allow Navio to run on <strong>All Websites</strong> for full functionality
+        </div>
+
+        <p class="note">
+            <strong>Note:</strong> Navio needs "All Websites" permission to work on all Google domains
+            (google.com, google.co.uk, etc.). The extension only runs on Google pages and does not
+            collect or store any data.
+        </p>
+    </div>
+
+    <ul class="feature-list">
+        <li>One-tap navigation from Google Search to Apple Maps</li>
+        <li>Works on all Google country domains</li>
+        <li>Supports addresses, places, and directions</li>
+        <li>Smart fallback for edge cases</li>
+        <li>No data collection</li>
+    </ul>
+
+    <div class="contact-section">
+        <button class="contact-button" onclick="contactDeveloper()">Contact Developer</button>
+    </div>
+
+    <script>
+        function contactDeveloper() {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.controller) {
+                window.webkit.messageHandlers.controller.postMessage({ action: 'contact' });
+            }
+        }
+    </script>
+
+    <style>
+        .contact-section {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #d2d2d7;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .contact-section {
+                border-color: #38383a;
+            }
+        }
+
+        .contact-button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .contact-button:hover {
+            background-color: #0051d5;
+        }
+
+        .contact-button:active {
+            background-color: #004bb8;
+        }
+    </style>
 </body>
 </html>
