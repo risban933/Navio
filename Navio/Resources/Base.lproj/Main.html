@@ -6,30 +6,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
     <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --glass-shadow: rgba(0, 0, 0, 0.1);
+            --glass-blur: 20px;
+            --surface-bg: #f5f5f7;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent: #007aff;
+            --accent-glow: rgba(0, 122, 255, 0.3);
+            --success: #34c759;
+            --border-light: rgba(255, 255, 255, 0.5);
+            --border-dark: rgba(0, 0, 0, 0.05);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --glass-bg: rgba(28, 28, 30, 0.7);
+                --glass-border: rgba(255, 255, 255, 0.1);
+                --glass-shadow: rgba(0, 0, 0, 0.4);
+                --surface-bg: #000000;
+                --text-primary: #f5f5f7;
+                --text-secondary: #98989d;
+                --border-light: rgba(255, 255, 255, 0.1);
+                --border-dark: rgba(255, 255, 255, 0.05);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             padding: 32px 24px;
             margin: 0;
             text-align: center;
-            background-color: #f5f5f7;
-            color: #1d1d1f;
+            background: var(--surface-bg);
+            color: var(--text-primary);
             line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
         }
 
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: #000000;
-                color: #f5f5f7;
-            }
+        /* Ambient background gradient for refraction effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(0, 122, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(52, 199, 89, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(175, 82, 222, 0.04) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: -1;
+        }
 
-            .instructions {
-                background-color: #1c1c1e;
-                border-color: #38383a;
-            }
-
-            .step {
-                border-color: #38383a;
-            }
+        /* Glass card base style */
+        .glass {
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow:
+                0 8px 32px var(--glass-shadow),
+                inset 0 1px 0 var(--border-light);
         }
 
         .logo {
@@ -37,24 +83,33 @@
             width: 128px;
             height: 128px;
             border-radius: 28px;
+            box-shadow:
+                0 12px 40px rgba(0, 0, 0, 0.15),
+                0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.02) translateY(-2px);
+            box-shadow:
+                0 16px 48px rgba(0, 0, 0, 0.2),
+                0 6px 16px rgba(0, 0, 0, 0.12);
         }
 
         h1 {
             font-size: 32px;
             font-weight: 700;
             margin: 0 0 12px 0;
+            letter-spacing: -0.5px;
         }
 
         .tagline {
             font-size: 18px;
-            color: #86868b;
+            color: var(--text-secondary);
             margin: 0 0 32px 0;
         }
 
         .instructions {
-            background-color: #ffffff;
-            border: 1px solid #d2d2d7;
-            border-radius: 12px;
             padding: 24px;
             margin: 0 auto 24px;
             max-width: 600px;
@@ -64,53 +119,150 @@
         .instructions h2 {
             font-size: 20px;
             font-weight: 600;
-            margin: 0 0 16px 0;
+            margin: 0 0 20px 0;
             text-align: center;
         }
 
         .step {
-            padding: 16px;
+            padding: 16px 20px;
             margin-bottom: 12px;
-            border-left: 3px solid #007aff;
-            background-color: rgba(0, 122, 255, 0.05);
+            border-radius: 12px;
+            background: linear-gradient(135deg,
+                rgba(0, 122, 255, 0.08) 0%,
+                rgba(0, 122, 255, 0.03) 100%);
+            border-left: 3px solid var(--accent);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .step:last-child {
+        .step:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
+        }
+
+        .step:last-of-type {
             margin-bottom: 0;
         }
 
         .step-number {
             font-weight: 700;
-            color: #007aff;
+            color: var(--accent);
             margin-right: 8px;
         }
 
         .note {
             font-size: 14px;
-            color: #86868b;
-            margin-top: 24px;
+            color: var(--text-secondary);
+            margin-top: 20px;
             padding: 16px;
-            background-color: rgba(0, 122, 255, 0.05);
-            border-radius: 8px;
+            background: linear-gradient(135deg,
+                rgba(0, 122, 255, 0.06) 0%,
+                rgba(0, 122, 255, 0.02) 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 122, 255, 0.1);
         }
 
         .feature-list {
             list-style: none;
-            padding: 0;
+            padding: 24px;
             margin: 24px auto;
             max-width: 600px;
+            text-align: left;
         }
 
         .feature-list li {
-            padding: 8px 0;
+            padding: 12px 16px;
             font-size: 16px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            background: rgba(52, 199, 89, 0.06);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .feature-list li:hover {
+            transform: translateX(4px);
+            background: rgba(52, 199, 89, 0.1);
         }
 
         .feature-list li::before {
-            content: "✓ ";
-            color: #34c759;
+            content: "\2713";
+            color: var(--success);
             font-weight: bold;
-            margin-right: 8px;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .contact-section {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-dark);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .contact-button {
+            background: linear-gradient(135deg,
+                var(--accent) 0%,
+                #0051d5 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            box-shadow:
+                0 4px 16px var(--accent-glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.2) 0%,
+                transparent 50%);
+            pointer-events: none;
+        }
+
+        .contact-button:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 24px var(--accent-glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .contact-button:active {
+            transform: translateY(0);
+            box-shadow:
+                0 2px 8px var(--accent-glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        /* Subtle animation for ambient feel */
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Respect reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
+            }
         }
     </style>
 </head>
@@ -120,7 +272,7 @@
     <h1>Welcome to Navio</h1>
     <p class="tagline">Automatically open Google Maps links in Apple Maps</p>
 
-    <div class="instructions">
+    <div class="instructions glass">
         <h2>Get Started</h2>
 
         <div class="step">
@@ -130,7 +282,7 @@
 
         <div class="step">
             <span class="step-number">2.</span>
-            Go to <strong>Safari</strong> → <strong>Extensions</strong>
+            Go to <strong>Safari</strong> &rarr; <strong>Extensions</strong>
         </div>
 
         <div class="step">
@@ -150,7 +302,7 @@
         </p>
     </div>
 
-    <ul class="feature-list">
+    <ul class="feature-list glass">
         <li>One-tap navigation from Google Search to Apple Maps</li>
         <li>Works on all Google country domains</li>
         <li>Supports addresses, places, and directions</li>
@@ -169,42 +321,5 @@
             }
         }
     </script>
-
-    <style>
-        .contact-section {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid #d2d2d7;
-            max-width: 600px;
-            width: 100%;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .contact-section {
-                border-color: #38383a;
-            }
-        }
-
-        .contact-button {
-            background-color: #007aff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        .contact-button:hover {
-            background-color: #0051d5;
-        }
-
-        .contact-button:active {
-            background-color: #004bb8;
-        }
-    </style>
 </body>
 </html>
