@@ -1,18 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div class="container">
-        <div class="status-badge">
-            <span class="status-icon"></span>
+    <div class="container" role="main" aria-label="Navio Extension Status">
+        <!-- Improvement 1: Enhanced status with animation -->
+        <div class="status-badge" role="status" aria-live="polite">
+            <span class="status-icon" aria-hidden="true"></span>
+            <span class="pulse-ring"></span>
         </div>
-        <h1>Navio is active</h1>
-        <p class="description">Google Maps links will open in Apple Maps.</p>
-        <p class="subtitle">No action needed from you.</p>
+
+        <h1 id="status-title">Navio is active</h1>
+        <p class="description" id="status-description">Google Maps links will open in Apple Maps.</p>
+
+        <!-- Improvement 5: Conversion counter -->
+        <div class="stats-card" role="region" aria-label="Conversion Statistics">
+            <div class="stat-item">
+                <span class="stat-value" id="conversion-count">0</span>
+                <span class="stat-label">Links converted</span>
+            </div>
+            <div class="stat-divider" aria-hidden="true"></div>
+            <div class="stat-item">
+                <span class="stat-value" id="session-count">0</span>
+                <span class="stat-label">This session</span>
+            </div>
+        </div>
+
+        <!-- Improvement 4: Settings toggle -->
+        <div class="settings-section" role="region" aria-label="Settings">
+            <label class="toggle-row" for="auto-redirect">
+                <span class="toggle-label">Auto-redirect</span>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="auto-redirect" checked aria-describedby="auto-redirect-desc">
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+            <p class="toggle-description" id="auto-redirect-desc">Automatically open links in Apple Maps</p>
+        </div>
+
+        <!-- Improvement 10: Accessible footer -->
+        <footer class="popup-footer">
+            <p class="subtitle">No action needed from you.</p>
+            <button class="help-button" id="help-btn" aria-label="Get help with Navio">
+                <span class="help-icon" aria-hidden="true">?</span>
+            </button>
+        </footer>
     </div>
+
+    <!-- Improvement 2: Toast notification container -->
+    <div class="toast-container" id="toast-container" role="alert" aria-live="assertive"></div>
+
+    <script src="popup.js"></script>
 </body>
 </html>
