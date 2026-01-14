@@ -151,21 +151,32 @@ async function updateStats() {
 
 /**
  * Show toast notification
+ * Security: Uses DOM methods instead of innerHTML to prevent XSS
  */
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
     // Remove existing toasts
-    container.innerHTML = '';
+    while (container.firstChild) {
+        container.removeChild(container.firstChild);
+    }
 
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <span class="toast-icon" aria-hidden="true">${type === 'success' ? '\u2713' : '\u2139'}</span>
-        <span>${message}</span>
-    `;
 
+    // Create icon span (safe to use textContent since it's a known character)
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'toast-icon';
+    iconSpan.setAttribute('aria-hidden', 'true');
+    iconSpan.textContent = type === 'success' ? '\u2713' : '\u2139';
+
+    // Create message span (use textContent to prevent XSS)
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message;
+
+    toast.appendChild(iconSpan);
+    toast.appendChild(messageSpan);
     container.appendChild(toast);
 
     // Auto-remove after delay

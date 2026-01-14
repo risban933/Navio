@@ -10,12 +10,89 @@
     const DEBUG = false;
     const FALLBACK_DELAY_MS = 500; // Delay for fallback redirect on maps.google.com
 
+    // Storage keys (must match popup.js)
+    const STORAGE_KEYS = {
+        TOTAL_CONVERSIONS: 'navio_total_conversions',
+        SESSION_CONVERSIONS: 'navio_session_conversions',
+        AUTO_REDIRECT: 'navio_auto_redirect'
+    };
+
     // ====== Utility Functions ======
 
     function log(...args) {
         if (DEBUG) {
             console.log('[Navio]', ...args);
         }
+    }
+
+    /**
+     * Check if auto-redirect is enabled
+     * @returns {Promise<boolean>}
+     */
+    async function isAutoRedirectEnabled() {
+        try {
+            const result = await browser.storage.local.get(STORAGE_KEYS.AUTO_REDIRECT);
+            return result[STORAGE_KEYS.AUTO_REDIRECT] !== false; // Default true
+        } catch (e) {
+            log('Could not check auto-redirect setting:', e);
+            return true; // Default to enabled
+        }
+    }
+
+    /**
+     * Increment conversion statistics
+     */
+    async function incrementConversionStats() {
+        try {
+            const result = await browser.storage.local.get([
+                STORAGE_KEYS.TOTAL_CONVERSIONS,
+                STORAGE_KEYS.SESSION_CONVERSIONS
+            ]);
+
+            const totalCount = (result[STORAGE_KEYS.TOTAL_CONVERSIONS] || 0) + 1;
+            const sessionCount = (result[STORAGE_KEYS.SESSION_CONVERSIONS] || 0) + 1;
+
+            await browser.storage.local.set({
+                [STORAGE_KEYS.TOTAL_CONVERSIONS]: totalCount,
+                [STORAGE_KEYS.SESSION_CONVERSIONS]: sessionCount
+            });
+
+            // Notify popup of conversion
+            browser.runtime.sendMessage({ action: 'conversionComplete' }).catch(() => {
+                // Popup may not be open, ignore error
+            });
+
+            log('Conversion stats updated:', totalCount, sessionCount);
+        } catch (e) {
+            log('Could not update conversion stats:', e);
+        }
+    }
+
+    /**
+     * Open Apple Maps URL via background script (proper messaging pattern)
+     * @param {string} url - The Apple Maps URL to open
+     */
+    function openAppleMapsViaBackground(url) {
+        // Per Apple documentation: sendNativeMessage must be called from background script,
+        // not content script. Send message to background script which forwards to native.
+        browser.runtime.sendMessage({
+            action: "openAppleMaps",
+            url: url
+        }).then(response => {
+            if (response && response.success) {
+                log("Successfully opened Apple Maps via native messaging");
+                incrementConversionStats();
+            } else {
+                // Fallback to direct navigation
+                log("Native messaging response unsuccessful, using fallback");
+                window.location.href = url;
+                incrementConversionStats();
+            }
+        }).catch(error => {
+            log("Background messaging failed, using direct navigation:", error);
+            window.location.href = url;
+            incrementConversionStats();
+        });
     }
 
     // ====== URL Conversion Logic ======
@@ -172,19 +249,8 @@
 
                     log("Click intercepted, opening Apple Maps:", appleMapsUrl);
 
-                    // Try native messaging first for better UX
-                    if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendNativeMessage) {
-                        browser.runtime.sendNativeMessage({
-                            action: "openAppleMaps",
-                            url: appleMapsUrl
-                        }).catch(() => {
-                            // Fallback: direct navigation
-                            window.location.href = appleMapsUrl;
-                        });
-                    } else {
-                        // Direct navigation
-                        window.location.href = appleMapsUrl;
-                    }
+                    // Use proper messaging through background script
+                    openAppleMapsViaBackground(appleMapsUrl);
                 }, true);
 
                 // Mark as processed
@@ -199,8 +265,15 @@
     /**
      * Handles fallback redirect when on Google Maps page
      */
-    function handleMapsPageFallback() {
+    async function handleMapsPageFallback() {
         log("On Google Maps page, attempting fallback redirect...");
+
+        // Check if auto-redirect is enabled
+        const autoRedirectEnabled = await isAutoRedirectEnabled();
+        if (!autoRedirectEnabled) {
+            log("Auto-redirect is disabled, skipping fallback redirect");
+            return;
+        }
 
         // Wait a moment for the page to fully load and URL to stabilize
         setTimeout(() => {
@@ -210,17 +283,8 @@
             if (appleMapsUrl) {
                 log("Fallback redirect to:", appleMapsUrl);
 
-                // Try native messaging for cleaner UX
-                if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendNativeMessage) {
-                    browser.runtime.sendNativeMessage({
-                        action: "openAppleMaps",
-                        url: appleMapsUrl
-                    }).catch(() => {
-                        window.location.href = appleMapsUrl;
-                    });
-                } else {
-                    window.location.href = appleMapsUrl;
-                }
+                // Use proper messaging through background script
+                openAppleMapsViaBackground(appleMapsUrl);
             } else {
                 log("Could not convert Maps page URL");
             }

@@ -16,6 +16,15 @@ import AppKit
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
+    /// Validates that a URL is a legitimate Apple Maps URL
+    /// Security: Defense-in-depth - validates even though JavaScript also validates
+    /// - Parameter url: The URL to validate
+    /// - Returns: True if the URL is a valid Apple Maps URL
+    private func isValidAppleMapsURL(_ url: URL) -> Bool {
+        guard let host = url.host else { return false }
+        return host == "maps.apple.com" && url.scheme == "https"
+    }
+
     func beginRequest(with context: NSExtensionContext) {
         let request = context.inputItems.first as? NSExtensionItem
 
@@ -42,7 +51,8 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
            let action = messageDict["action"] as? String,
            action == "openAppleMaps",
            let urlString = messageDict["url"] as? String,
-           let url = URL(string: urlString) {
+           let url = URL(string: urlString),
+           isValidAppleMapsURL(url) {  // Security: Validate URL before opening
 
             os_log(.default, "Opening Apple Maps URL: %@", urlString)
 
