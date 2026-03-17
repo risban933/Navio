@@ -1,11 +1,9 @@
 {
     "manifest_version": 3,
     "default_locale": "en",
-
     "name": "__MSG_extension_name__",
     "description": "__MSG_extension_description__",
     "version": "1.0.0",
-
     "icons": {
         "16": "images/icon-16.png",
         "19": "images/icon-19.png",
@@ -18,39 +16,62 @@
         "256": "images/icon-256.png",
         "512": "images/icon-512.png"
     },
-
     "background": {
-        "service_worker": "background.js",
-        "type": "module"
+        "service_worker": "background.js"
     },
-
-    "content_scripts": [{
-        "js": [ "content.js" ],
-        "matches": [
-            "*://*.google.com/*",
-            "*://*.google.co.uk/*",
-            "*://*.google.ca/*",
-            "*://*.google.com.au/*",
-            "*://*.google.de/*",
-            "*://*.google.fr/*",
-            "*://*.google.es/*",
-            "*://*.google.it/*",
-            "*://*.google.co.jp/*",
-            "*://*.google.co.in/*",
-            "*://*.google.com.br/*",
-            "*://*.google.ru/*",
-            "*://*.google.co.kr/*",
-            "*://*.google.com.mx/*",
-            "*://*.google.nl/*",
-            "*://*.google.pl/*",
-            "*://*.google.se/*",
-            "*://*.google.ch/*",
-            "*://*.google.at/*",
-            "*://*.google.be/*"
-        ],
-        "run_at": "document_end"
-    }],
-
+    "content_scripts": [
+        {
+            "js": [
+                "lib/urlConversion.js",
+                "lib/settings.js",
+                "lib/stats.js",
+                "content.js"
+            ],
+            "matches": [
+                "*://google.com/*",
+                "*://*.google.com/*",
+                "*://google.co.uk/*",
+                "*://*.google.co.uk/*",
+                "*://google.ca/*",
+                "*://*.google.ca/*",
+                "*://google.com.au/*",
+                "*://*.google.com.au/*",
+                "*://google.de/*",
+                "*://*.google.de/*",
+                "*://google.fr/*",
+                "*://*.google.fr/*",
+                "*://google.es/*",
+                "*://*.google.es/*",
+                "*://google.it/*",
+                "*://*.google.it/*",
+                "*://google.co.jp/*",
+                "*://*.google.co.jp/*",
+                "*://google.co.in/*",
+                "*://*.google.co.in/*",
+                "*://google.com.br/*",
+                "*://*.google.com.br/*",
+                "*://google.ru/*",
+                "*://*.google.ru/*",
+                "*://google.co.kr/*",
+                "*://*.google.co.kr/*",
+                "*://google.com.mx/*",
+                "*://*.google.com.mx/*",
+                "*://google.nl/*",
+                "*://*.google.nl/*",
+                "*://google.pl/*",
+                "*://*.google.pl/*",
+                "*://google.se/*",
+                "*://*.google.se/*",
+                "*://google.ch/*",
+                "*://*.google.ch/*",
+                "*://google.at/*",
+                "*://*.google.at/*",
+                "*://google.be/*",
+                "*://*.google.be/*"
+            ],
+            "run_at": "document_end"
+        }
+    ],
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
@@ -61,13 +82,50 @@
         },
         "default_title": "Navio"
     },
-
     "permissions": [
         "nativeMessaging",
         "storage"
     ],
-
     "host_permissions": [
-        "<all_urls>"
+        "*://google.com/*",
+        "*://*.google.com/*",
+        "*://google.co.uk/*",
+        "*://*.google.co.uk/*",
+        "*://google.ca/*",
+        "*://*.google.ca/*",
+        "*://google.com.au/*",
+        "*://*.google.com.au/*",
+        "*://google.de/*",
+        "*://*.google.de/*",
+        "*://google.fr/*",
+        "*://*.google.fr/*",
+        "*://google.es/*",
+        "*://*.google.es/*",
+        "*://google.it/*",
+        "*://*.google.it/*",
+        "*://google.co.jp/*",
+        "*://*.google.co.jp/*",
+        "*://google.co.in/*",
+        "*://*.google.co.in/*",
+        "*://google.com.br/*",
+        "*://*.google.com.br/*",
+        "*://google.ru/*",
+        "*://*.google.ru/*",
+        "*://google.co.kr/*",
+        "*://*.google.co.kr/*",
+        "*://google.com.mx/*",
+        "*://*.google.com.mx/*",
+        "*://google.nl/*",
+        "*://*.google.nl/*",
+        "*://google.pl/*",
+        "*://*.google.pl/*",
+        "*://google.se/*",
+        "*://*.google.se/*",
+        "*://google.ch/*",
+        "*://*.google.ch/*",
+        "*://google.at/*",
+        "*://*.google.at/*",
+        "*://google.be/*",
+        "*://*.google.be/*"
     ]
 }

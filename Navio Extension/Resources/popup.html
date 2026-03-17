@@ -6,53 +6,72 @@
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div class="container" role="main" aria-label="Navio Extension Status">
-        <!-- Improvement 1: Enhanced status with animation -->
-        <div class="status-badge" role="status" aria-live="polite">
-            <span class="status-icon" aria-hidden="true"></span>
-            <span class="pulse-ring"></span>
-        </div>
-
-        <h1 id="status-title">Navio is active</h1>
-        <p class="description" id="status-description">Google Maps links will open in Apple Maps.</p>
-
-        <!-- Improvement 5: Conversion counter -->
-        <div class="stats-card" role="region" aria-label="Conversion Statistics">
-            <div class="stat-item">
-                <span class="stat-value" id="conversion-count">0</span>
-                <span class="stat-label">Links converted</span>
+    <main class="popup" role="main" aria-labelledby="status-title">
+        <header class="panel hero">
+            <div class="hero-row">
+                <p class="eyebrow">Safari extension</p>
+                <div class="status-pill" id="status-pill" role="status" aria-live="polite">
+                    <span class="status-indicator" aria-hidden="true"></span>
+                    <span id="status-label">Loading</span>
+                </div>
             </div>
-            <div class="stat-divider" aria-hidden="true"></div>
-            <div class="stat-item">
-                <span class="stat-value" id="session-count">0</span>
-                <span class="stat-label">This session</span>
-            </div>
-        </div>
+            <h1 id="status-title">Loading Navio</h1>
+            <p class="description" id="status-description">Checking your current redirect settings.</p>
+        </header>
 
-        <!-- Improvement 4: Settings toggle -->
-        <div class="settings-section" role="region" aria-label="Settings">
+        <section class="panel section" aria-labelledby="redirect-heading">
+            <div class="section-copy">
+                <h2 id="redirect-heading">Redirect behavior</h2>
+                <p>Control whether supported Google Maps links and Google Maps pages open in Apple Maps.</p>
+            </div>
+
             <label class="toggle-row" for="auto-redirect">
-                <span class="toggle-label">Auto-redirect</span>
-                <div class="toggle-switch">
+                <span class="toggle-copy">
+                    <span class="toggle-label">Open in Apple Maps</span>
+                    <span class="toggle-description" id="auto-redirect-desc">
+                        Applies to supported Google Maps links and direct Google Maps pages.
+                    </span>
+                </span>
+                <span class="toggle-switch">
                     <input type="checkbox" id="auto-redirect" checked aria-describedby="auto-redirect-desc">
                     <span class="toggle-slider"></span>
-                </div>
+                </span>
             </label>
-            <p class="toggle-description" id="auto-redirect-desc">Automatically open links in Apple Maps</p>
-        </div>
+        </section>
 
-        <!-- Improvement 10: Accessible footer -->
-        <footer class="popup-footer">
-            <p class="subtitle">No action needed from you.</p>
-            <button class="help-button" id="help-btn" aria-label="Get help with Navio">
-                <span class="help-icon" aria-hidden="true">?</span>
+        <section class="panel section" aria-labelledby="activity-heading">
+            <div class="section-copy">
+                <h2 id="activity-heading">Activity</h2>
+                <p>Counts update while the extension is active in Safari.</p>
+            </div>
+
+            <div class="stats-grid" role="region" aria-label="Conversion statistics">
+                <div class="stat-card">
+                    <span class="stat-value" id="conversion-count">0</span>
+                    <span class="stat-label">Lifetime</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="session-count">0</span>
+                    <span class="stat-label">This session</span>
+                </div>
+            </div>
+        </section>
+
+        <footer class="panel support" aria-labelledby="support-heading">
+            <div class="section-copy support-copy">
+                <h2 id="support-heading">Need help?</h2>
+                <p>Contact support if setup or redirect behavior needs attention.</p>
+            </div>
+            <button class="support-button" id="help-btn" type="button">
+                Contact support
             </button>
         </footer>
-    </div>
 
-    <!-- Improvement 2: Toast notification container -->
-    <div class="toast-container" id="toast-container" role="alert" aria-live="assertive"></div>
+        <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+    </main>
 
+    <script src="lib/settings.js"></script>
+    <script src="lib/stats.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>

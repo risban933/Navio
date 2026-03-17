@@ -1,358 +1,375 @@
 /**
- * Navio Content Script
- * Automatically redirects Google Maps links to Apple Maps
+ * Navio content script.
+ * Rewrites supported Google Maps links to Apple Maps and handles fallback redirects.
  */
 
 (function() {
-    'use strict';
+    "use strict";
 
-    // ====== Configuration ======
     const DEBUG = false;
-    const FALLBACK_DELAY_MS = 500; // Delay for fallback redirect on maps.google.com
+    const FALLBACK_DELAY_MS = 500;
+    const PROCESSED_SELECTOR = "a[data-navio-processed='true']";
 
-    // Storage keys (must match popup.js)
-    const STORAGE_KEYS = {
-        TOTAL_CONVERSIONS: 'navio_total_conversions',
-        SESSION_CONVERSIONS: 'navio_session_conversions',
-        AUTO_REDIRECT: 'navio_auto_redirect'
+    const state = {
+        autoRedirectEnabled: true,
+        clickHandlers: new WeakMap(),
+        fallbackTimer: null,
+        fullScanRequested: false,
+        historyPatched: false,
+        initialized: false,
+        lastUrl: "",
+        observer: null,
+        pendingRoots: new Set(),
+        reprocessScheduled: false
     };
 
-    // ====== Utility Functions ======
-
-    function log(...args) {
+    function log() {
         if (DEBUG) {
-            console.log('[Navio]', ...args);
+            console.log("[Navio]", ...arguments);
         }
     }
 
-    /**
-     * Check if auto-redirect is enabled
-     * @returns {Promise<boolean>}
-     */
-    async function isAutoRedirectEnabled() {
-        try {
-            const result = await browser.storage.local.get(STORAGE_KEYS.AUTO_REDIRECT);
-            return result[STORAGE_KEYS.AUTO_REDIRECT] !== false; // Default true
-        } catch (e) {
-            log('Could not check auto-redirect setting:', e);
-            return true; // Default to enabled
-        }
+    function isSupportedGoogleHost(host) {
+        return Boolean(globalThis.NavioAllowedHosts?.isAllowedGoogleHost(host));
     }
 
-    /**
-     * Increment conversion statistics
-     */
-    async function incrementConversionStats() {
-        try {
-            const result = await browser.storage.local.get([
-                STORAGE_KEYS.TOTAL_CONVERSIONS,
-                STORAGE_KEYS.SESSION_CONVERSIONS
-            ]);
-
-            const totalCount = (result[STORAGE_KEYS.TOTAL_CONVERSIONS] || 0) + 1;
-            const sessionCount = (result[STORAGE_KEYS.SESSION_CONVERSIONS] || 0) + 1;
-
-            await browser.storage.local.set({
-                [STORAGE_KEYS.TOTAL_CONVERSIONS]: totalCount,
-                [STORAGE_KEYS.SESSION_CONVERSIONS]: sessionCount
-            });
-
-            // Notify popup of conversion
-            browser.runtime.sendMessage({ action: 'conversionComplete' }).catch(() => {
-                // Popup may not be open, ignore error
-            });
-
-            log('Conversion stats updated:', totalCount, sessionCount);
-        } catch (e) {
-            log('Could not update conversion stats:', e);
-        }
-    }
-
-    /**
-     * Open Apple Maps URL via background script (proper messaging pattern)
-     * @param {string} url - The Apple Maps URL to open
-     */
-    function openAppleMapsViaBackground(url) {
-        // Per Apple documentation: sendNativeMessage must be called from background script,
-        // not content script. Send message to background script which forwards to native.
-        browser.runtime.sendMessage({
-            action: "openAppleMaps",
-            url: url
-        }).then(response => {
-            if (response && response.success) {
-                log("Successfully opened Apple Maps via native messaging");
-                incrementConversionStats();
-            } else {
-                // Fallback to direct navigation
-                log("Native messaging response unsuccessful, using fallback");
-                window.location.href = url;
-                incrementConversionStats();
-            }
-        }).catch(error => {
-            log("Background messaging failed, using direct navigation:", error);
-            window.location.href = url;
-            incrementConversionStats();
-        });
-    }
-
-    // ====== URL Conversion Logic ======
-
-    /**
-     * Converts a Google Maps URL to an Apple Maps URL
-     * @param {string} googleUrl - The Google Maps URL to convert
-     * @returns {string|null} - The equivalent Apple Maps URL, or null if conversion fails
-     */
-    function googleToAppleMapsURL(googleUrl) {
-        try {
-            const url = new URL(googleUrl);
-
-            // Extract query parameters
-            let qParam = url.searchParams.get("q") || url.searchParams.get("query") || "";
-            let destination = url.searchParams.get("destination") || url.searchParams.get("daddr") || "";
-            let origin = url.searchParams.get("origin") || url.searchParams.get("saddr") || "";
-
-            const path = url.pathname;
-
-            // Check for /maps/place/ pattern
-            if (!qParam && /\/maps\/place\//.test(path)) {
-                const placePart = path.split("/maps/place/")[1];
-                if (placePart) {
-                    // Extract name before coordinates or next slash
-                    const namePart = placePart.split('/')[0].split('@')[0];
-                    qParam = decodeURIComponent(namePart.replace(/\+/g, " "));
-                }
-            }
-
-            // Check for /maps/dir/ pattern (directions)
-            if (!destination && /\/maps\/dir\//.test(path)) {
-                const dirPart = path.split("/maps/dir/")[1];
-                if (dirPart) {
-                    const parts = dirPart.split("/");
-                    if (parts.length >= 2) {
-                        origin = decodeURIComponent(parts[0].replace(/\+/g, " "));
-                        destination = decodeURIComponent(parts[1].replace(/\+/g, " "));
-                    } else if (parts.length === 1) {
-                        // Only destination provided
-                        destination = decodeURIComponent(parts[0].replace(/\+/g, " "));
-                    }
-                }
-            }
-
-            // Check for /maps/search/ pattern
-            if (!qParam && /\/maps\/search\//.test(path)) {
-                const searchPart = path.split("/maps/search/")[1];
-                if (searchPart) {
-                    qParam = decodeURIComponent(searchPart.split('/')[0].replace(/\+/g, " "));
-                }
-            }
-
-            // Build Apple Maps URL
-            if (destination || origin) {
-                // It's a directions URL
-                let appleUrl = "https://maps.apple.com/?";
-                if (origin && origin !== "Current+Location" && origin !== "My+Location") {
-                    appleUrl += "saddr=" + encodeURIComponent(origin) + "&";
-                }
-                if (destination) {
-                    appleUrl += "daddr=" + encodeURIComponent(destination);
-                } else if (qParam) {
-                    // Use qParam as destination if no explicit destination
-                    appleUrl += "daddr=" + encodeURIComponent(qParam);
-                }
-                return appleUrl;
-            } else {
-                // Not a directions link, just a place search
-
-                // Extract coordinates if present (format: @lat,lng,zoom)
-                const coordsMatch = url.href.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-                if (coordsMatch) {
-                    const lat = coordsMatch[1];
-                    const lon = coordsMatch[2];
-                    if (qParam) {
-                        // Use coords with label
-                        return `https://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(qParam)}`;
-                    } else {
-                        // Just coordinates
-                        return `https://maps.apple.com/?ll=${lat},${lon}`;
-                    }
-                }
-
-                // Default: use q parameter for search
-                if (qParam) {
-                    return "https://maps.apple.com/?q=" + encodeURIComponent(qParam);
-                }
-
-                // Last resort: try to extract anything useful from the URL
-                // This handles some edge cases where the query might be embedded differently
-                if (url.searchParams.has('query')) {
-                    return "https://maps.apple.com/?q=" + encodeURIComponent(url.searchParams.get('query'));
-                }
-
-                // If we couldn't parse anything useful, return null
-                log("Could not parse URL:", googleUrl);
-                return null;
-            }
-        } catch (e) {
-            log("Error parsing URL:", googleUrl, e);
-            return null;
-        }
-    }
-
-    // ====== Link Detection and Modification ======
-
-    /**
-     * Checks if we're on a Google Search results page
-     */
     function isGoogleSearchPage() {
-        return /\.google\./.test(location.host) && location.pathname === '/search';
+        return isSupportedGoogleHost(location.hostname) && location.pathname === "/search";
     }
 
-    /**
-     * Checks if we're on a Google Maps page
-     */
     function isGoogleMapsPage() {
-        return /\.google\./.test(location.host) && location.pathname.startsWith('/maps');
+        return isSupportedGoogleHost(location.hostname) && location.pathname.startsWith("/maps");
     }
 
-    /**
-     * Processes Google Maps links on the page
-     */
-    function processMapLinks() {
-        // Select all anchors that link to Google Maps
-        const mapLinkSelector = "a[href*='//maps.google.'], a[href*='/maps/place'], a[href*='/maps/dir'], a[href*='/maps/search'], a[href*='/maps?']";
-        const mapLinks = document.querySelectorAll(mapLinkSelector);
+    function shouldInspectHref(href) {
+        return (
+            typeof href === "string" &&
+            href.length > 0 &&
+            (href.includes("/maps") ||
+                href.includes("maps.google.") ||
+                (href.includes("/url?") && href.includes("maps")) ||
+                (href.includes("google.") && href.includes("maps")))
+        );
+    }
 
-        log(`Found ${mapLinks.length} map links to process`);
+    function rememberOriginalLinkState(anchor) {
+        if (!anchor.dataset.navioOriginalHref) {
+            anchor.dataset.navioOriginalHref = anchor.getAttribute("href") || anchor.href;
+        }
 
-        let processedCount = 0;
+        if (!anchor.dataset.navioOriginalTarget) {
+            anchor.dataset.navioOriginalTarget =
+                anchor.getAttribute("target") || "__NAVIO_EMPTY__";
+        }
+    }
 
-        mapLinks.forEach(anchor => {
-            // Skip if already processed
-            if (anchor.dataset.navioProcessed) {
+    function restoreAnchor(anchor) {
+        const existingHandler = state.clickHandlers.get(anchor);
+        if (existingHandler) {
+            anchor.removeEventListener("click", existingHandler, true);
+            state.clickHandlers.delete(anchor);
+        }
+
+        if (anchor.dataset.navioOriginalHref) {
+            anchor.setAttribute("href", anchor.dataset.navioOriginalHref);
+        }
+
+        if (anchor.dataset.navioOriginalTarget === "__NAVIO_EMPTY__") {
+            anchor.removeAttribute("target");
+        } else if (anchor.dataset.navioOriginalTarget) {
+            anchor.setAttribute("target", anchor.dataset.navioOriginalTarget);
+        }
+
+        delete anchor.dataset.navioAppleHref;
+        delete anchor.dataset.navioOriginalHref;
+        delete anchor.dataset.navioOriginalTarget;
+        delete anchor.dataset.navioProcessed;
+    }
+
+    function restoreProcessedLinks(root) {
+        const scope = root || document;
+        const anchors = scope.querySelectorAll
+            ? scope.querySelectorAll(PROCESSED_SELECTOR)
+            : [];
+
+        anchors.forEach(restoreAnchor);
+    }
+
+    async function notifyConversionComplete() {
+        try {
+            await globalThis.NavioStats.incrementStats();
+        } catch (error) {
+            log("Failed to update stats", error);
+        }
+
+        try {
+            await browser.runtime.sendMessage({ action: "conversionComplete" });
+        } catch (error) {
+            // Popup may not be open.
+        }
+    }
+
+    async function openAppleMapsViaBackground(url) {
+        try {
+            const response = await browser.runtime.sendMessage({
+                action: "openAppleMaps",
+                url: url
+            });
+
+            if (response?.success) {
+                await notifyConversionComplete();
                 return;
             }
+        } catch (error) {
+            log("Falling back to direct navigation", error);
+        }
 
-            const originalHref = anchor.href;
-            const appleMapsUrl = googleToAppleMapsURL(originalHref);
-
-            if (appleMapsUrl) {
-                log(`Converting: ${originalHref} -> ${appleMapsUrl}`);
-
-                // Method 1: Rewrite the href
-                anchor.href = appleMapsUrl;
-                anchor.target = "_self";
-
-                // Method 2: Add click interceptor as backup
-                anchor.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    log("Click intercepted, opening Apple Maps:", appleMapsUrl);
-
-                    // Use proper messaging through background script
-                    openAppleMapsViaBackground(appleMapsUrl);
-                }, true);
-
-                // Mark as processed
-                anchor.dataset.navioProcessed = "true";
-                processedCount++;
-            }
-        });
-
-        log(`Processed ${processedCount} map links`);
+        await notifyConversionComplete();
+        window.location.href = url;
     }
 
-    /**
-     * Handles fallback redirect when on Google Maps page
-     */
-    async function handleMapsPageFallback() {
-        log("On Google Maps page, attempting fallback redirect...");
-
-        // Check if auto-redirect is enabled
-        const autoRedirectEnabled = await isAutoRedirectEnabled();
-        if (!autoRedirectEnabled) {
-            log("Auto-redirect is disabled, skipping fallback redirect");
+    function processAnchor(anchor) {
+        if (!state.autoRedirectEnabled) {
+            restoreAnchor(anchor);
             return;
         }
 
-        // Wait a moment for the page to fully load and URL to stabilize
-        setTimeout(() => {
-            const currentUrl = window.location.href;
-            const appleMapsUrl = googleToAppleMapsURL(currentUrl);
+        const href = anchor.href;
+        if (!shouldInspectHref(href)) {
+            if (anchor.dataset.navioProcessed === "true") {
+                restoreAnchor(anchor);
+            }
+            return;
+        }
+
+        const appleMapsUrl = globalThis.NavioUrlConversion.googleToAppleMapsURL(href);
+        if (!appleMapsUrl) {
+            if (anchor.dataset.navioProcessed === "true") {
+                restoreAnchor(anchor);
+            }
+            return;
+        }
+
+        rememberOriginalLinkState(anchor);
+
+        const existingHandler = state.clickHandlers.get(anchor);
+        if (existingHandler) {
+            anchor.removeEventListener("click", existingHandler, true);
+        }
+
+        const clickHandler = function(event) {
+            if (!state.autoRedirectEnabled) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            void openAppleMapsViaBackground(appleMapsUrl);
+        };
+
+        anchor.setAttribute("href", appleMapsUrl);
+        anchor.setAttribute("target", "_self");
+        anchor.dataset.navioAppleHref = appleMapsUrl;
+        anchor.dataset.navioProcessed = "true";
+        anchor.addEventListener("click", clickHandler, true);
+        state.clickHandlers.set(anchor, clickHandler);
+    }
+
+    function collectAnchors(root) {
+        const anchors = [];
+
+        if (!root) {
+            return anchors;
+        }
+
+        if (root === document) {
+            return Array.from(document.querySelectorAll("a[href]"));
+        }
+
+        if (root.nodeType !== Node.ELEMENT_NODE) {
+            return anchors;
+        }
+
+        if (root.matches?.("a[href]")) {
+            anchors.push(root);
+        }
+
+        anchors.push(...root.querySelectorAll("a[href]"));
+        return anchors;
+    }
+
+    function processRoot(root) {
+        collectAnchors(root).forEach(processAnchor);
+    }
+
+    function clearFallbackTimer() {
+        if (state.fallbackTimer !== null) {
+            clearTimeout(state.fallbackTimer);
+            state.fallbackTimer = null;
+        }
+    }
+
+    function scheduleFallbackRedirect() {
+        clearFallbackTimer();
+
+        if (!state.autoRedirectEnabled || !isGoogleMapsPage()) {
+            return;
+        }
+
+        state.fallbackTimer = window.setTimeout(function() {
+            state.fallbackTimer = null;
+
+            if (!state.autoRedirectEnabled || !isGoogleMapsPage()) {
+                return;
+            }
+
+            const appleMapsUrl = globalThis.NavioUrlConversion.googleToAppleMapsURL(
+                window.location.href
+            );
 
             if (appleMapsUrl) {
-                log("Fallback redirect to:", appleMapsUrl);
-
-                // Use proper messaging through background script
-                openAppleMapsViaBackground(appleMapsUrl);
-            } else {
-                log("Could not convert Maps page URL");
+                void openAppleMapsViaBackground(appleMapsUrl);
             }
         }, FALLBACK_DELAY_MS);
     }
 
-    /**
-     * Observes DOM changes to catch dynamically added links
-     */
-    function observeDOMChanges() {
-        const observer = new MutationObserver((mutations) => {
-            let shouldProcess = false;
+    function flushReprocessQueue() {
+        state.reprocessScheduled = false;
 
-            for (const mutation of mutations) {
-                if (mutation.addedNodes.length > 0) {
-                    shouldProcess = true;
-                    break;
-                }
+        if (!state.autoRedirectEnabled) {
+            restoreProcessedLinks(document);
+            clearFallbackTimer();
+            state.pendingRoots.clear();
+            state.fullScanRequested = false;
+            return;
+        }
+
+        if (state.fullScanRequested || state.pendingRoots.size === 0) {
+            processRoot(document);
+        } else {
+            Array.from(state.pendingRoots).forEach(processRoot);
+        }
+
+        state.pendingRoots.clear();
+        state.fullScanRequested = false;
+        scheduleFallbackRedirect();
+    }
+
+    function scheduleProcessing(root) {
+        if (root) {
+            state.pendingRoots.add(root);
+        } else {
+            state.fullScanRequested = true;
+        }
+
+        if (state.reprocessScheduled) {
+            return;
+        }
+
+        state.reprocessScheduled = true;
+        window.requestAnimationFrame(flushReprocessQueue);
+    }
+
+    function observeDOMChanges() {
+        if (state.observer) {
+            return;
+        }
+
+        const observerTarget = document.body || document.documentElement;
+        if (!observerTarget) {
+            return;
+        }
+
+        state.observer = new MutationObserver(function(mutations) {
+            if (!state.autoRedirectEnabled) {
+                return;
             }
 
-            if (shouldProcess) {
-                processMapLinks();
+            for (const mutation of mutations) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        scheduleProcessing(node);
+                    }
+                });
             }
         });
 
-        observer.observe(document.body, {
+        state.observer.observe(observerTarget, {
             childList: true,
             subtree: true
         });
-
-        log("DOM observer started");
     }
 
-    // ====== Main Execution ======
+    function handleLocationChange() {
+        if (state.lastUrl === window.location.href) {
+            return;
+        }
 
-    function init() {
-        log("Navio content script loaded on:", location.href);
+        state.lastUrl = window.location.href;
+        scheduleProcessing(null);
+    }
 
-        if (isGoogleSearchPage()) {
-            log("Detected Google Search page");
+    function patchHistoryMethods() {
+        if (state.historyPatched) {
+            return;
+        }
 
-            // Process existing links
-            processMapLinks();
+        const originalPushState = history.pushState;
+        const originalReplaceState = history.replaceState;
 
-            // Watch for dynamically added links (Google often loads results progressively)
-            observeDOMChanges();
+        history.pushState = function() {
+            const result = originalPushState.apply(this, arguments);
+            queueMicrotask(handleLocationChange);
+            return result;
+        };
 
-        } else if (isGoogleMapsPage()) {
-            log("Detected Google Maps page - executing fallback");
+        history.replaceState = function() {
+            const result = originalReplaceState.apply(this, arguments);
+            queueMicrotask(handleLocationChange);
+            return result;
+        };
 
-            // This is the fallback mechanism: we're on a Google Maps page
-            // (probably because our primary interception failed or user navigated directly)
-            handleMapsPageFallback();
+        window.addEventListener("popstate", handleLocationChange);
+        state.historyPatched = true;
+    }
 
-        } else if (/\.google\./.test(location.host)) {
-            log("On Google domain but not search/maps page - monitoring for links");
+    function onStorageChanged(changes, areaName) {
+        if (areaName !== "local" || !changes[globalThis.NavioSettings.STORAGE_KEYS.AUTO_REDIRECT]) {
+            return;
+        }
 
-            // Still process any maps links that might appear
-            processMapLinks();
-            observeDOMChanges();
+        state.autoRedirectEnabled =
+            changes[globalThis.NavioSettings.STORAGE_KEYS.AUTO_REDIRECT].newValue !== false;
+        scheduleProcessing(null);
+    }
+
+    async function init() {
+        if (state.initialized) {
+            return;
+        }
+
+        state.initialized = true;
+        state.lastUrl = window.location.href;
+        state.autoRedirectEnabled = await globalThis.NavioSettings.getAutoRedirectEnabled();
+
+        observeDOMChanges();
+        patchHistoryMethods();
+        browser.storage.onChanged.addListener(onStorageChanged);
+
+        if (isGoogleSearchPage() || isGoogleMapsPage() || isSupportedGoogleHost(location.hostname)) {
+            scheduleProcessing(null);
         }
     }
 
-    // Run initialization when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+    if (document.readyState === "loading") {
+        document.addEventListener(
+            "DOMContentLoaded",
+            function() {
+                void init();
+            },
+            { once: true }
+        );
     } else {
-        init();
+        void init();
     }
-
 })();

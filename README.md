@@ -1,20 +1,20 @@
 # Navio - Safari Extension
 
-Navio is a Safari web extension for iOS and macOS that automatically redirects Google Maps links to Apple Maps, providing a seamless one-tap navigation experience.
+Navio is an iOS-first Safari web extension that automatically redirects supported Google Maps links to Apple Maps, providing a seamless one-tap navigation experience on iPhone and iPad.
 
 ## Features
 
 - **Auto-redirect Google Maps links**: Any link on Google Search that would normally open Google Maps will instead launch Apple Maps with the corresponding location
-- **Support all Google domains**: Works on every regional Google domain (google.com, google.co.uk, google.ca, etc.) for both iOS and macOS Safari
+- **Support for configured Google domains**: Works on the supported Google domains listed in `config/google_domains.json`
 - **Smart fallback mechanism**: If Navio cannot immediately resolve a particular link, it will allow the Google Maps web page to load and then automatically attempt the redirect from there
 - **Zero data storage**: Navio does not collect or store personal data. It only examines page content for map links and uses on-device URL schemes to open Apple Maps
-- **Native integration**: Uses native messaging for optimal user experience on both platforms
+- **Native integration**: Uses native messaging for a smoother Apple Maps launch flow on iOS
 
 ## Project Structure
 
 ```
 Navio/
-├── Navio/                          # iOS/macOS container app
+├── Navio/                          # iOS container app
 │   ├── Resources/
 │   │   └── Base.lproj/
 │   │       └── Main.html          # Splash screen with setup instructions
@@ -86,13 +86,11 @@ If a Google Maps link is missed on the search page, Navio has a fallback mechani
 
 ### 4. Native Integration
 
-For the best user experience (especially on macOS), Navio uses native messaging:
+For the best user experience on iOS, Navio uses native messaging:
 
 - When a link is clicked, the content script sends a message to the background script
 - The background script forwards it to the native app via `browser.runtime.sendNativeMessage()`
-- `SafariWebExtensionHandler.swift` receives the message and opens Apple Maps using:
-  - **iOS**: `UIApplication.shared.open()`
-  - **macOS**: `NSWorkspace.shared.open()`
+- `SafariWebExtensionHandler.swift` receives the message and delegates Apple Maps opening through the app/extension bridge
 - This avoids Safari creating blank tabs or showing repeated permission prompts
 
 ## Development Setup
@@ -100,7 +98,7 @@ For the best user experience (especially on macOS), Navio uses native messaging:
 ### Requirements
 
 - **Xcode 14+** (for Manifest v3 support)
-- **macOS 12+** and/or **iOS 16+** for testing
+- **iOS 16+** simulator or device for testing
 - Safari with extension support enabled
 - Apple Developer account (for running on physical iOS devices)
 
@@ -118,8 +116,8 @@ For the best user experience (especially on macOS), Navio uses native messaging:
    ```
 
 3. **Select your target**:
-   - For macOS: Select "Navio (macOS)" scheme
-   - For iOS: Select "Navio (iOS)" scheme
+   - Select the shared `Navio` scheme
+   - Choose an iPhone or iPad simulator, or a connected iOS device
 
 4. **Build and run**:
    - Press `Cmd+R` or click the Run button
@@ -127,23 +125,16 @@ For the best user experience (especially on macOS), Navio uses native messaging:
 
 ### Enabling the Extension
 
-#### On macOS:
-1. Run the Navio app from Xcode
-2. Open Safari → Preferences → Extensions
-3. Enable "Navio"
-4. Allow "All Websites" permission
-5. Close the preferences and test on a Google search
-
 #### On iOS (Simulator or Device):
 1. Run the Navio app from Xcode
 2. Open Settings app → Safari → Extensions
 3. Enable "Navio"
-4. Allow "All Websites" permission
+4. Allow Navio on supported Google websites when Safari prompts for site access
 5. Open Safari and test on a Google search
 
 ### Icon Assets
 
-The extension requires icon assets in multiple sizes. Place them in `Navio Extension/Resources/images/`:
+The extension ships icon assets in multiple sizes in `Navio Extension/Resources/images/`:
 
 - `icon-16.png` (16x16)
 - `icon-19.png` (19x19) - iOS toolbar
@@ -156,7 +147,7 @@ The extension requires icon assets in multiple sizes. Place them in `Navio Exten
 - `icon-256.png` (256x256)
 - `icon-512.png` (512x512)
 
-**Note**: Currently, the project references these icons but placeholder assets need to be created. Use a simple compass or map pin icon design.
+The smaller toolbar icon sizes are derived from the main app icon so the extension bundle is complete out of the box.
 
 ## Testing
 
@@ -217,7 +208,7 @@ To enable debug logging:
 Navio uses Manifest V3 for future compatibility and improved performance:
 
 - **Non-persistent background script**: Lightweight service worker
-- **Host permissions**: `<all_urls>` to support all Google country domains
+- **Host permissions**: Generated from `config/google_domains.json` so the extension only requests access on supported Google domains
 - **Native messaging permission**: For seamless Apple Maps opening
 
 ### Content Script Flow
@@ -279,17 +270,17 @@ The extension only examines page content to find Google Maps links and uses stan
 
 ## Known Limitations
 
-- **First-time permission prompt**: Users must allow "All Websites" permission for the extension to work on all Google domains
+- **First-time permission prompt**: Users must allow Navio on supported Google websites before redirects can run
 - **Safari prompts**: On first use, Safari may show a permission dialog to open Apple Maps
 - **Dynamic content**: Some dynamically loaded Google results may have a slight delay before links are converted (handled by DOM observer)
-- **macOS tab behavior**: Depending on Safari version, a blank tab might briefly appear when opening Apple Maps (mitigated by native messaging)
+- **Mac scope**: Apple Silicon Macs may run the iOS app in Designed for iPad mode, but this repo does not include a native macOS or Catalyst target
 
 ## Troubleshooting
 
 ### Extension not working
 
 1. Check if the extension is enabled in Safari settings
-2. Verify "All Websites" permission is granted
+2. Verify Navio has been allowed on the current Google website
 3. Try disabling and re-enabling the extension
 4. Check Safari's Web Inspector console for errors
 
@@ -333,4 +324,4 @@ For issues, questions, or feedback, please open an issue on the repository or co
 
 ---
 
-**Built with ❤️ for iOS and macOS Safari users who prefer Apple Maps**
+**Built for iPhone and iPad Safari users who prefer Apple Maps**

@@ -11,7 +11,24 @@ import MessageUI
 
 class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHandler, MFMailComposeViewControllerDelegate {
 
+    private struct SupportConfig: Decodable {
+        let supportEmail: String
+    }
+
     @IBOutlet var webView: WKWebView!
+
+    private lazy var supportEmail: String = {
+        guard
+            let url = Bundle.main.url(forResource: "SupportConfig", withExtension: "json"),
+            let data = try? Data(contentsOf: url),
+            let config = try? JSONDecoder().decode(SupportConfig.self, from: data),
+            !config.supportEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return "support@navio-app.com"
+        }
+
+        return config.supportEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -53,7 +70,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
 
         let mailComposer = MFMailComposeViewController()
         mailComposer.mailComposeDelegate = self
-        mailComposer.setToRecipients(["support@navio-app.com"]) // Replace with actual support email
+        mailComposer.setToRecipients([supportEmail])
         mailComposer.setSubject("Navio Feedback")
 
         // Pre-fill device information
@@ -74,7 +91,6 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
 
     /// Fallback method to open mailto URL if mail composer is not available
     private func openMailtoURL() {
-        let email = "support@navio-app.com" // Replace with actual support email
         let subject = "Navio Feedback"
         let device = UIDevice.current.model
         let iosVersion = UIDevice.current.systemVersion
@@ -92,7 +108,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
 
-        if let url = URL(string: "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)") {
+        if let url = URL(string: "mailto:\(supportEmail)?subject=\(encodedSubject)&body=\(encodedBody)") {
             UIApplication.shared.open(url)
         }
     }

@@ -8,12 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### To Do
-- Generate missing icon sizes (16, 19, 32, 38px)
-- Design custom Navio-branded icons
-- Test on physical iOS and macOS devices
+- Test on physical iOS devices
 - Prepare App Store assets (screenshots, description)
 - Set up App Store Connect
 - Submit for App Store review
+
+### Changed
+- Clarified the product as iOS-first instead of claiming native macOS or Catalyst support
+- Replaced blanket `<all_urls>` permissions with generated Google-domain-specific permissions
+- Moved support-email configuration into `Shared/SupportConfig.json`
+- Added a real shared Xcode scheme and smoke-test coverage
+
+### Added
+- Shared extension helper modules for URL conversion, settings, stats, and allowed-host validation
+- Node `node:test` coverage for the pure JavaScript modules
+- Generated 16px, 19px, 32px, and 38px extension icons
 
 ## [1.0.0] - 2025-11-14
 

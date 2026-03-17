@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		4907982A2EC6EA78003A319C /* Navio Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 490798292EC6EA78003A319C /* Navio Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5A6C01012F000001003A319C /* SupportConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 5A6C01032F000001003A319C /* SupportConfig.json */; };
+		5A6C01022F000001003A319C /* SupportConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 5A6C01032F000001003A319C /* SupportConfig.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +55,7 @@
 		490798132EC6EA78003A319C /* NavioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NavioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4907981D2EC6EA78003A319C /* NavioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NavioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		490798292EC6EA78003A319C /* Navio Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Navio Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A6C01032F000001003A319C /* SupportConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = SupportConfig.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -144,6 +147,7 @@
 				490798162EC6EA78003A319C /* NavioTests */,
 				490798202EC6EA78003A319C /* NavioUITests */,
 				4907982D2EC6EA78003A319C /* Navio Extension */,
+				5A6C01042F000001003A319C /* Shared */,
 				490797F72EC6EA77003A319C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -157,6 +161,14 @@
 				490798292EC6EA78003A319C /* Navio Extension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		5A6C01042F000001003A319C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				5A6C01032F000001003A319C /* SupportConfig.json */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -307,6 +319,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A6C01012F000001003A319C /* SupportConfig.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,6 +341,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A6C01022F000001003A319C /* SupportConfig.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -582,12 +596,13 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -640,11 +655,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
